@@ -6,25 +6,80 @@
 <title>Luna Forge</title>
 <link rel="icon" type="image/png" href="/icon-32.png">
 <style>
-  :root{ --bg:#0a0818; --ink:#f4f0e6; --muted:#b9b3d9; --ember:#e87a39; }
+  :root{ --bg:#0a0818; --ink:#f4f0e6; --muted:#b9b3d9; --ember:#e87a39; --card:#151030; }
   *{box-sizing:border-box}
   html,body{ height:100%; margin:0; }
   body{
     background:radial-gradient(ellipse at 30% 0%, #1c1746 0%, var(--bg) 55%);
     color:var(--ink); display:flex; align-items:center; justify-content:center;
     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+    padding:20px;
   }
-  .card{ text-align:center; max-width:360px; padding:32px; }
+  .card{ text-align:center; max-width:440px; padding:32px; }
   .card img{ width:56px; height:56px; border-radius:14px; margin-bottom:18px; }
   h1{ font-size:1.3rem; margin:0 0 8px; }
-  p{ color:var(--muted); font-size:0.95rem; margin:0; line-height:1.5; }
+  p{ color:var(--muted); font-size:0.95rem; margin:0 0 14px; line-height:1.5; }
+  .code-box{
+    background:var(--card); border:1px solid #2a2460; border-radius:10px;
+    padding:16px; margin:18px 0; word-break:break-all;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:0.95rem; color:var(--ember); user-select:all;
+  }
+  .hint{ font-size:0.82rem; color:var(--muted); }
+  button{
+    background:var(--ember); color:#1a1030; border:none; border-radius:8px;
+    padding:10px 18px; font-size:0.9rem; font-weight:600; cursor:pointer; margin-top:4px;
+  }
+  button:active{ transform:translateY(1px); }
+  .copied{ color:#8be28b; font-size:0.85rem; margin-top:8px; min-height:1.2em; }
 </style>
 </head>
 <body>
-  <div class="card">
+  <div class="card" id="card">
     <img src="/icon-64.png" alt="Luna Forge">
     <h1>You're all set</h1>
     <p>Luna Forge's TikTok connection runs locally on the owner's own device. You can close this window.</p>
   </div>
+  <script>
+    // TikTok redirects here with ?code=...&state=... after the owner approves access.
+    // This page never sends the code anywhere - it only displays it, once, in this browser,
+    // for the owner to copy back to wherever they're setting the connection up.
+    const q = new URLSearchParams(location.search);
+    const code = q.get("code");
+    const error = q.get("error");
+    const card = document.getElementById("card");
+
+    if (code) {
+      card.innerHTML = `
+        <img src="/icon-64.png" alt="Luna Forge">
+        <h1>Almost done</h1>
+        <p>Copy this code and paste it back where you were setting up the TikTok connection.</p>
+        <div class="code-box" id="codebox">${code}</div>
+        <button id="copybtn">Copy code</button>
+        <div class="copied" id="copied"></div>
+        <p class="hint">This code only works once and expires in a few minutes.</p>
+      `;
+      const box = document.getElementById("codebox");
+      const btn = document.getElementById("copybtn");
+      const copied = document.getElementById("copied");
+      const doCopy = () => {
+        navigator.clipboard.writeText(code).then(() => {
+          copied.textContent = "Copied.";
+        }).catch(() => {
+          copied.textContent = "Couldn't auto-copy - select the code above and copy it manually.";
+        });
+      };
+      btn.addEventListener("click", doCopy);
+      doCopy(); // try to copy automatically on load too
+    } else if (error) {
+      card.innerHTML = `
+        <img src="/icon-64.png" alt="Luna Forge">
+        <h1>Something went wrong</h1>
+        <p>TikTok reported: <strong>${error.replace(/[<>&]/g, c => ({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]))}</strong></p>
+        <p class="hint">Go back and try connecting again.</p>
+      `;
+    }
+    // else: leave the default "You're all set" message (page opened directly, no params).
+  </script>
 </body>
 </html>
